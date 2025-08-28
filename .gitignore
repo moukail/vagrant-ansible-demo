@@ -1,0 +1,4 @@
+.idea
+.vagrant/machines
+.vagrant/rgloader
+.vagrant/provisioning

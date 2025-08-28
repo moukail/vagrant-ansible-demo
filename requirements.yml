@@ -1,0 +1,32 @@
+---
+collections:
+  - name: containers.podman
+  - name: ansible.posix
+  - name: community.general
+  - name: community.crypto
+
+roles:
+  - name: vault
+    src: https://github.com/marcelvenema/ansible-role-vault.git
+    version: main
+    scm: git
+
+  - name: nexus-repository
+    src: https://github.com/marcelvenema/ansible-role-nexus-repository.git
+    version: main
+    scm: git
+
+  - name: server-config
+    src: https://github.com/marcelvenema/ansible-role-server-config.git
+    version: main
+    scm: git
+
+  - name: podman
+    src: https://github.com/marcelvenema/ansible-role-podman.git
+    version: main
+    scm: git
+
+  - name: cockpit
+    src: https://github.com/marcelvenema/ansible-role-cockpit.git
+    version: main
+    scm: git
