@@ -71,3 +71,9 @@ vagrant ssh machine1
 ```bash
 vagrant reload --provision
 ```
+
+###
+```bash
+ansible all -m setup -a "filter=*ipv4*"
+ansible all -m setup -a "filter=*interface*"
+```

@@ -1,4 +1,5 @@
 .idea
 .vagrant/machines
 .vagrant/rgloader
-.vagrant/provisioning
+.vagrant/provisioners
+.ansible_vault_pass.txt

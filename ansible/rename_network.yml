@@ -1,0 +1,39 @@
+---
+- name: Process interface renames
+  when: new_iface not in ansible_facts['interfaces']
+  vars:
+    new_iface: "{{ item }}"
+  block:
+    - name: Set fact old_iface
+      ansible.builtin.set_fact:
+        old_iface: "{{ (ansible_facts['interfaces'] | difference(['lo']))[idx] }}"
+
+    - name: Debug
+      ansible.builtin.debug:
+        msg: "Renaming {{ old_iface }} → {{ new_iface }} (index {{ idx }})"
+
+    - name: Get MAC address of {{ old_iface }}
+      ansible.builtin.command: ip link show "{{ old_iface }}"
+      register: ip_link
+      changed_when: false
+
+    - name: Extract MAC address
+      ansible.builtin.set_fact:
+        iface_mac: "{{ ip_link.stdout | regex_search('(?i)link/ether ([0-9a-f:]{2}(:[0-9a-f:]{2}){5})', '\\1') | first }}"
+
+    - name: Extract connection name
+      ansible.builtin.set_fact:
+        connection_name: "{{ active_conns.stdout_lines | select('search', old_iface) | map('split', ':') | map('first') | list | first }}"
+
+    - name: Show debug info
+      ansible.builtin.debug:
+        msg: "Renaming {{ old_iface }} (MAC {{ iface_mac }}) to {{ new_iface }}, connection: {{ connection_name }}"
+
+    - name: Rename interface in NetworkManager
+      ansible.builtin.command: nmcli connection modify "{{ connection_name }}" connection.id "{{ new_iface }}" connection.interface-name "{{ new_iface }}"
+
+    - name: Create udev rule to rename interface
+      notify: reboot_system
+      ansible.builtin.copy:
+        dest: /etc/udev/rules.d/70-persistent-net-{{ new_iface }}.rules
+        content: SUBSYSTEM=="net", ACTION=="add", ATTR{address}=="{{ iface_mac }}", NAME="{{ new_iface }}"

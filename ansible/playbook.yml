@@ -1,208 +1,60 @@
 ---
-# This is the main installation file to install the lab core services server
-# It will install the following:
-# - podman, cockpit, hashicorp vault, nexus repository
-
-- name: Install Lab Playground server prerequisites
+- name: Configure Machine 1
   hosts: group1
   become: true
 
   tasks:
-    # Information message
     - name: Information message
       ansible.builtin.debug:
         msg:
           - "###############################################################"
-          - "###############################################################"
-          - "Install Lab Core Services prerequisites on Ansible control node"
-          - "###############################################################"
+          - " ##########                 Machine 1                 #########"
           - "###############################################################"
 
-    # Ensure pip is installed
-    - name: Ensure pip is installed...
-      become: true
-      ansible.builtin.dnf:
-        name:
-          - python3.12
-          - python3.12-pip
-      when: ansible_os_family == "RedHat"
 
-    # Ensure python passlib module is installed on Ansible control node to create password hashes
-    - name: Ensure passlib is installed...
-      ansible.builtin.command:
-        cmd: "pip3.12 install passlib"
 
-- name: Install Lab Playground server
+- name: Configure Machine 2
   hosts: group2
   become: true
+
   vars:
-    # if uninstall is true, roles will be uninstalled first before installation.
-    uninstall: false
-    automation_username: "ansible"
-    # automation_password: "" # Will be generated and stored in Vault
-    automation_email: "ansible@me.local"
-
-    vm_name: "LABCS"
-
-  roles:
+    new_iface_names:
+      - ens0
+      - ens1
 
   tasks:
-    # Information message
     - name: Information message
       ansible.builtin.debug:
         msg:
-          - "#########################################################"
-          - "#########################################################"
-          - "Install Lab Core Services"
-          - "#########################################################"
-          - "#########################################################"
+          - "###############################################################"
+          - " ##########                 Machine 2                 #########"
+          - "###############################################################"
 
-    # Information message
-    - name: Information message
+
+    - name: Get active connections
+      ansible.builtin.command: nmcli -t -f NAME,DEVICE connection show --active
+      register: active_conns
+      changed_when: false
+
+    - name: Check length of active connections
+      failed_when: (new_iface_names | length) > ((active_conns.stdout_lines | difference(['lo:lo'])) | length)
       ansible.builtin.debug:
         msg:
-          - "#########################################################"
-          - "First server configuration"
-          - "#########################################################"
+          - "You declared more interfaces to rename than active connections available!"
+          - "The length of new_iface_names is: {{ (new_iface_names | length) }}"
+          - "The length of active connections is: {{ ((active_conns.stdout_lines | difference(['lo:lo'])) | length) }}"
 
-    # Configure server
-    #- name: Configure server first install...
-    #  ansible.builtin.include_role:
-    #    name: server-config
-    #  vars:
-    #    action: "first_config"
-    #    server_hostname: "{{ vm_name }}.development.local"
+    - name: Process interface renames
+      when: (new_iface_names | length) <= ((active_conns.stdout_lines | difference(['lo:lo'])) | length)
+      ansible.builtin.include_tasks: rename_network.yml
+      loop: "{{ new_iface_names | sort }}"
+      loop_control:
+        index_var: idx
 
-    # Register global variable
-    #- name: Register global variable (server_hostname)...
-    #  ansible.builtin.set_fact:
-    #    server_hostname: "{{ server_hostname }}"
-    #  delegate_to: localhost
-
-    # Install podman container engine
-    - name: Install Podman container engine...
-      ansible.builtin.include_role:
-        name: podman
-      vars:
-        action: "install"
-
-    # Install cockpit management gui
-    - name: Install Cockpit management gui...
-      ansible.builtin.include_role:
-        name: cockpit
-      vars:
-        action: "install"
-        cockpit_branding_logo: "./media/banner_lab_white.png"
-
-    - name: Information message
-      ansible.builtin.debug:
-        msg:
-          - "#########################################################"
-          - "Install Hashicorp Vault secrets management"
-          - "#########################################################"
-
-    # Install Hashicorp Vault
-    - name: Install Hashicorp Vault secret management...
-      ansible.builtin.include_role:
-        name: vault
-      vars:
-        action: "install"
-        vault:
-          container:
-            #repository_url: "docker.io/hashicorp/vault"
-            repository_tag: "1.20"
-          #secrets:
-          #  secret_name: "{{ server_name }}"
-
-    # Add server config to vault
-    - name: Configure vault
-      ansible.builtin.include_role:
-        name: server-config
-      vars:
-        action: "configure_vault"
-        # automation_username: # set in playbook variables.
-        # automation_password: # set in playbook variables.
-        # automation_email:    # set in playbook variables.
-
-    - name: Information message
-      ansible.builtin.debug:
-        msg:
-          - "#########################################################"
-          - "Install Nexus Repository artifacts management"
-          - "#########################################################"
-
-    # Install Nexus Repository
-    - name: Setup Nexus Repository role and modules...
-      ansible.builtin.include_role:
-        name: nexus-repository
-      vars:
-        action: "install"
-        nexus_repository_url     : "docker.io/sonatype/nexus3"
-        nexus_repository_vault_id: "{{ server_hostname }}"
-        # automation_username    : "" # defined at playbook level
-        # automation_password    : "" # defined at playbook level
-        # automation_email       : "" # defined at playbook level
-
-    # Create repository
-    - name: Create repository (files)...
-      ansible.builtin.include_role:
-        name: nexus-repository
-      vars:
-        action: "create_repository"
-        # nexus_repository_address : "" # defined at playbook level
-        # nexus_repository_username: "" # defined at playbook level
-        # nexus_repository_password: "" # defined at playbook level
-        nexus_repository_vault_id  : "{{ server_hostname }}"
-        nexus_repository_name      : "files"
-        nexus_repository_type      : "raw"
-
-    # Create repository
-    - name: Create repository (os_templates)...
-      ansible.builtin.include_role:
-        name: nexus-repository
-      vars:
-        action: "create_repository"
-        # nexus_repository_address : "" # defined at playbook level
-        # nexus_repository_username: "" # defined at playbook level
-        # nexus_repository_password: "" # defined at playbook level
-        nexus_repository_vault_id  : "{{ server_hostname }}"
-        nexus_repository_name      : "os_templates"
-        nexus_repository_type      : "raw"
-
-    # Create repository
-    - name: Create repository (operating_systems)...
-      ansible.builtin.include_role:
-        name: nexus-repository
-      vars:
-        action: "create_repository"
-        # nexus_repository_address : "" # defined at playbook level
-        # nexus_repository_username: "" # defined at playbook level
-        # nexus_repository_password: "" # defined at playbook level
-        nexus_repository_vault_id  : "{{ server_hostname }}"
-        nexus_repository_name      : "operating_systems"
-        nexus_repository_type      : "raw"
-
-    # Create repository
-    - name: Create repository (containers)...
-      ansible.builtin.include_role:
-        name: nexus-repository
-      vars:
-        action: "create_repository"
-        # nexus_repository_address : "" # defined at playbook level
-        # nexus_repository_username: "" # defined at playbook level
-        # nexus_repository_password: "" # defined at playbook level
-        nexus_repository_vault_id  : "{{ server_hostname }}"
-        nexus_repository_name      : "containers"
-        nexus_repository_type      : "docker"
-
-
-    # Information message
-    - name: Show information message
-      debug:
-        msg:
-          - "Installation of Playground Lab Core Services completed..."
-          - "Server: {{ server_hostname }}."
-          - "Vault address: {{ vault_address }} - Vault token: {{ vault_token }}"
-          - "Nexus repository: {{ nexus_repository_address }}."
-          - "Nexus admin password stored in Vault."
-          - "Nexus repositories created: containers, files, os_templates, operating_systems."
+  handlers:
+    - name: reboot_system
+      ansible.builtin.reboot:
+        msg: "Rebooting to apply network interface renames"
+        pre_reboot_delay: 5
+        reboot_timeout: 300
+        test_command: whoami
