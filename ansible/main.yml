@@ -1,0 +1,7 @@
+---
+#- name: Security
+#  ansible.builtin.import_playbook: playbook-security.yml
+- name: Storage
+  ansible.builtin.import_playbook: playbook-storage.yml
+#- name: Network
+#  ansible.builtin.import_playbook: playbook-network.yml

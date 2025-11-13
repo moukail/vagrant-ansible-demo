@@ -1,18 +1,4 @@
 ---
-- name: Configure Machine 1
-  hosts: group1
-  become: true
-
-  tasks:
-    - name: Information message
-      ansible.builtin.debug:
-        msg:
-          - "###############################################################"
-          - " ##########                 Machine 1                 #########"
-          - "###############################################################"
-
-
-
 - name: Configure Machine 2
   hosts: group2
   become: true
@@ -30,15 +16,14 @@
           - " ##########                 Machine 2                 #########"
           - "###############################################################"
 
-
     - name: Get active connections
       ansible.builtin.command: nmcli -t -f NAME,DEVICE connection show --active
       register: active_conns
       changed_when: false
 
     - name: Check length of active connections
-      failed_when: (new_iface_names | length) > ((active_conns.stdout_lines | difference(['lo:lo'])) | length)
-      ansible.builtin.debug:
+      when: (new_iface_names | length) > ((active_conns.stdout_lines | difference(['lo:lo'])) | length)
+      ansible.builtin.fail:
         msg:
           - "You declared more interfaces to rename than active connections available!"
           - "The length of new_iface_names is: {{ (new_iface_names | length) }}"
@@ -46,7 +31,7 @@
 
     - name: Process interface renames
       when: (new_iface_names | length) <= ((active_conns.stdout_lines | difference(['lo:lo'])) | length)
-      ansible.builtin.include_tasks: rename_network.yml
+      ansible.builtin.include_tasks: block-rename-network.yml
       loop: "{{ new_iface_names | sort }}"
       loop_control:
         index_var: idx

@@ -1,0 +1,6 @@
+---
+collections:
+  - ansible.posix
+  - community.general
+roles:
+  - name: linux-system-roles.selinux

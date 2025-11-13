@@ -33,12 +33,12 @@ Vagrant.configure("2") do |config|
     # Run Ansible from the Vagrant Host
     #
     config.vm.provision "ansible" do |ansible|
-        ansible.playbook = "ansible/playbook.yml"
+        ansible.playbook = "ansible/main.yml"
         ansible.compatibility_mode = "2.0"
         ansible.version = "latest"
         ansible.verbose = "-v"
         #ansible.vault_password_file = ".ansible_vault_pass.txt"
-        #ansible.galaxy_role_file = "ansible/requirements.yml"
+        ansible.galaxy_role_file = "ansible/requirements.yml"
         ansible.config_file = "ansible/ansible.cfg"
         ansible.host_vars = {
             "machine1" => {

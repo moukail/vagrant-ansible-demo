@@ -1,0 +1,137 @@
+---
+- name: Configure Machine 1
+  hosts: group1
+  become: true
+
+  vars:
+    disk_devices:
+      - { device: /dev/sdb, number: 1, part_start: 1MB, part_end: 1GB }
+      - { device: /dev/sdb, number: 2, part_start: 1GB, part_end: 100% }
+      - { device: /dev/sdc, number: 1, part_start: 1MB, part_end: 1GB }
+      - { device: /dev/sdc, number: 2, part_start: 1GB, part_end: 100% }
+      #- { device: /dev/loop1, number: 1, part_start: 1MB, part_end: 100% }
+      #- { device: /dev/loop2, number: 1, part_start: 1MB, part_end: 100% }
+
+  tasks:
+    - name: Information message
+      ansible.builtin.debug:
+        msg:
+          - "###############################################################"
+          - " ##########                 Machine 1                 #########"
+          - "###############################################################"
+
+    - name: Install required packages
+      ansible.builtin.package:
+        name:
+          - nfs-utils
+        state: present
+
+    - name: Make disk file
+      ansible.builtin.command: "fallocate -l 2G ~/disk{{ item }}.img"
+      args:
+        creates: "~/disk{{ item }}.img"
+      loop: "{{ range(1, 3) | list }}"
+
+    - name: Set up loop device
+      ansible.builtin.command: "losetup /dev/loop{{ item }} ~/disk{{ item }}.img"
+      args:
+        creates: "/dev/loop{{ item }}"
+      loop: "{{ range(1, 3) | list }}"
+
+    - name: Creating partitions
+      community.general.parted:
+        device: "{{ item.device }}"
+        label: gpt
+        number: "{{ item.number }}"
+        part_start: "{{ item.part_start }}"
+        part_end: "{{ item.part_end }}"
+        flags: [lvm]
+        state: present
+      loop: "{{ disk_devices }}"
+
+    - name: Build PV list dynamically
+      ansible.builtin.set_fact:
+        pv_list: >-
+          {{
+            disk_devices
+            | map(attribute='device')
+            | zip(disk_devices | map(attribute='number'))
+            | map('join', '')
+            | map('regex_replace', 'loop([0-9]+)([0-9]+)$', 'loop\1p\2')
+            | list
+          }}
+
+    - name: Creating volume group
+      community.general.lvg:
+        vg: sample-vg
+        pvs: "{{ pv_list }}"
+        pesize: 16M
+
+    - name: Creating logical volume
+      community.general.lvol:
+        vg: sample-vg
+        lv: sample-lv
+        size: 100%VG
+        state: present
+
+    - name: Creating filesystem on logical volume
+      community.general.filesystem:
+        fstype: xfs
+        dev: /dev/sample-vg/sample-lv
+        resizefs: true
+
+    - name: Mount logical volume
+      ansible.posix.mount:
+        path: /my_data/sample-lv
+        src: /dev/sample-vg/sample-lv
+        fstype: xfs
+        opts: defaults
+        state: mounted
+
+    - name: Configure NFS export
+      ansible.builtin.copy:
+        dest: /etc/exports.d/sample-lv.exports
+        content: "/my_data/sample-lv    *(rw,sync,no_root_squash,no_subtree_check)"
+
+    - name: Ensure NFS is started and enabled
+      ansible.builtin.service:
+        name: nfs-server
+        state: restarted
+        enabled: true
+
+- name: Configure Machine 2
+  hosts: group2
+  become: true
+
+  tasks:
+    - name: Information message
+      ansible.builtin.debug:
+        msg:
+          - "###############################################################"
+          - " ##########                 Machine 2                 #########"
+          - "###############################################################"
+
+    - name: Install required packages
+      ansible.builtin.package:
+        name:
+          - autofs
+          - nfs-utils
+        state: present
+
+    - name: Configure autofs master map
+      ansible.builtin.copy:
+        dest: /etc/auto.master.d/nfs.autofs
+        content: |
+          /-    /etc/auto.nfs
+
+    - name: Configure autofs to mount NFS share from Machine 1
+      ansible.builtin.copy:
+        dest: /etc/auto.nfs
+        content: |
+          /sample-lv   -rw,sync,fstype=nfs4    192.168.56.10:/my_data/sample-lv
+
+    - name: Ensure autofs is started and enabled
+      ansible.builtin.service:
+        name: autofs
+        state: restarted
+        enabled: true

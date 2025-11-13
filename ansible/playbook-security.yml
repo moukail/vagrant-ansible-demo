@@ -1,0 +1,17 @@
+---
+- name: Configure Security Settings
+  hosts: all
+  become: true
+
+  vars:
+    selinux_state: enforcing
+    selinux_policy: targeted
+    selinux_ports:
+      - { ports: 8080, proto: tcp, setype: http_port_t, state: present }
+      - { ports: 8443, proto: tcp, setype: http_port_t, state: present }
+
+  tasks:
+    - name: Ensure SELinux is installed and configured
+      ansible.builtin.include_role:
+        name: linux-system-roles.selinux
+

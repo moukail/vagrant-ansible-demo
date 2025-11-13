@@ -71,9 +71,23 @@ vagrant ssh machine1
 ```bash
 vagrant reload --provision
 ```
+#### Make loop device
+$ fallocate -l 1G disk0
+$ sudo losetup /dev/loop100 disk0
+$ losetup | grep loop100
+$ lsblk | grep loop100
 
 ###
 ```bash
 ansible all -m setup -a "filter=*ipv4*"
 ansible all -m setup -a "filter=*interface*"
+ansible all -m setup -a "filter=ansible_*_mgr"
+ansible machine1 -a "lsblk"
+ansible machine1 -m shell -a "lsblk | grep disk | cut -f1 -d' '"
+ansible machine1 -a "grep 'model name' /proc/cpuinfo"
+```
+
+###
+```bash
+ansible-galaxy role install linux-system-roles.selinux
 ```
