@@ -3,3 +3,4 @@
 .vagrant/rgloader
 .vagrant/provisioners
 .ansible_vault_pass.txt
+ansible/roles
