@@ -4,3 +4,12 @@ collections:
   - community.general
 roles:
   - name: linux-system-roles.selinux
+  - name: ansible-role-openssl
+    src: git+https://github.com/moukail/ansible-role-openssl.git
+    version: main
+  - name: ansible-role-openssh
+    src: git+https://github.com/moukail/ansible-role-openssh.git
+    version: main
+  - name: ansible-role-python
+    src: git+https://github.com/moukail/ansible-role-python.git
+    version: main  
