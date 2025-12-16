@@ -1,0 +1,40 @@
+---
+- name: Setup a web server
+  hosts: web
+  become: true
+
+  vars:
+    web_user: nginx
+    openssl_version: "3.5.4"
+
+  roles:
+    - ansible-role-swap
+    - ansible-role-openssh
+    #- ansible-role-mysql
+    - role: ansible-role-php
+      vars:
+        user: "{{ web_user }}"
+        php_version: 8.4.15
+
+    - role: ansible-role-php
+      vars:
+        user: "{{ web_user }}"
+        php_version: 8.5.0
+
+    - role: ansible-role-nginx
+      vars:
+        user: "{{ web_user }}"
+        nginx_version: 1.28.0
+
+  tasks:
+    - name: Test
+      ansible.builtin.stat:
+        path: /etc/hosts
+      register: stat_result
+      delegate_to: localhost
+      connection: local
+      become: false
+
+    - name: Debug
+      ansible.builtin.debug:
+        var: stat_result

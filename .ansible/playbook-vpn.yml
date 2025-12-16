@@ -1,0 +1,27 @@
+---
+- name: Setup Server
+  hosts: all
+  become: true
+
+  roles:
+    - ansible-role-swap
+    #- ansible-role-openssh
+
+- name: Install FreeRADIUS Server
+  hosts: machine2
+  become: true
+
+  roles:
+    - role: ansible-role-freeRadius
+
+- name: Setup a vpn server
+  hosts: machine3
+  become: true
+
+  roles:
+    - ansible-role-strongswan
+
+  tasks:
+    - name: Debug
+      ansible.builtin.debug:
+        msg: "VPN server setup complete"

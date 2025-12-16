@@ -2,8 +2,12 @@
 collections:
   - ansible.posix
   - community.general
+  - community.mysql
 roles:
   - name: linux-system-roles.selinux
+  - name: ansible-role-swap
+    src: git+https://github.com/moukail/ansible-role-swap.git
+    version: main
   - name: ansible-role-openssl
     src: git+https://github.com/moukail/ansible-role-openssl.git
     version: main
@@ -12,4 +16,10 @@ roles:
     version: main
   - name: ansible-role-python
     src: git+https://github.com/moukail/ansible-role-python.git
-    version: main  
+    version: main
+  - name: ansible-role-nginx
+    src: git+https://github.com/moukail/ansible-role-nginx.git
+    version: main
+  - name: ansible-role-php
+    src: git+https://github.com/moukail/ansible-role-php.git
+    version: main

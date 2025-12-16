@@ -44,8 +44,8 @@ else
     # redhat 9 needs enabling md2
     ./Configure --prefix=/usr --libdir=/usr/lib/x86_64-linux-gnu --openssldir=/etc/ssl shared zlib enable-md2
 
-    make -j$(nproc) 1> /dev/null
-    make install 1> /dev/null
+    make -j$(nproc)
+    make install
 
     echo "/usr/lib64" > /etc/ld.so.conf.d/openssl.conf
     ldconfig
