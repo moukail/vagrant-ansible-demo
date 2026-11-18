@@ -1,0 +1,23 @@
+---
+- name: Destroy
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  # no_log: "{{ molecule_no_log }}"
+  tasks:
+    # Developer must implement.
+
+    # Mandatory configuration for Molecule to function.
+
+    - name: Remove test containers
+      containers.podman.podman_container:
+        name: "{{ hostvars[item].ansible_host }}"
+        state: absent
+      loop: "{{ groups['all'] }}"
+      failed_when: false
+
+    - name: Remove container network
+      containers.podman.podman_network:
+        name: molecule-linux-test
+        state: absent
+      failed_when: false

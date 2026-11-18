@@ -23,3 +23,9 @@ roles:
   - name: ansible-role-php
     src: git+https://github.com/moukail/ansible-role-php.git
     version: main
+  - name: ansible-role-freeradius
+    src: git+https://github.com/moukail/ansible-role-freeradius.git
+    version: main
+  - name: ansible-role-strongswan
+    src: git+https://github.com/moukail/ansible-role-strongswan.git
+    version: main

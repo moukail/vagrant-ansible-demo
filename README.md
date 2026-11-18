@@ -1,23 +1,96 @@
-### Vagrant
-#### install virtualbox
+Install QEMU
+======
 ```bash
-wget https://download.virtualbox.org/virtualbox/7.1.8/virtualbox-7.1_7.1.8-168469~Ubuntu~noble_amd64.deb
-sudo dpkg -i virtualbox-7.1_7.1.8-168469~Ubuntu~noble_amd64.deb
+## For Debian/Ubuntu
+sudo apt install -y qemu-system libvirt-daemon-system libvirt-dev
 
-sudo apt install gcc-12 g++-12
-sudo /sbin/vboxconfig
-VBoxManage --version
+sudo usermod -aG libvirt,kvm $USER
+newgrp libvirt
+sudo systemctl enable --now libvirtd
+
+## For RHEL/CentOS
+sudo yum install qemu-kvm
+
+sudo modprobe kvm_intel || true
 ```
 
-### Install Vagrant
+Install VirtualBox
+======
 ```bash
+## For Ubuntu
+sudo apt install make gcc liblzf1 libtpms0 libxcb-cursor0
+
+wget https://download.virtualbox.org/virtualbox/7.2.4/virtualbox-7.2_7.2.4-170995~Ubuntu~noble_amd64.deb
+sudo dpkg -i virtualbox-7.2_7.2.4-170995~Ubuntu~noble_amd64.deb
+sudo /sbin/vboxconfig
+
+## To build centos vagrant box you need virtualbox-7.1
+sudo apt install libqt6core6t64 libqt6dbus6t64 libqt6gui6t64 libqt6help6 libqt6printsupport6t64 libqt6statemachine6 libqt6widgets6t64 libqt6xml6t64
+
+wget https://download.virtualbox.org/virtualbox/7.1.14/virtualbox-7.1_7.1.14-170994~Ubuntu~noble_amd64.deb
+sudo dpkg -i virtualbox-7.1_7.1.14-170994~Ubuntu~noble_amd64.deb
+
+## For RHEL/CentOS
+wget https://download.virtualbox.org/virtualbox/7.2.4/VirtualBox-7.2-7.2.4_170995_el10-1.x86_64.rpm
+sudo dnf install VirtualBox-7.2-7.2.4_170995_el10-1.x86_64.rpm
+
+##
+VBoxManage --version
+
+## Error fix: Stderr: VBoxManage: error: VT-x is being used by another hypervisor (VERR_VMX_IN_VMX_ROOT_MODE).
+sudo modprobe -r kvm_intel kvm
+
+## Error fix: Stderr: /sbin/vboxconfig: error: The VirtualBox kernel module is not loaded.
+sudo dnf install -y gcc make perl kernel-devel-$(uname -r)
+sudo /sbin/vboxconfig
+```
+
+Install Vagrant
+=======
+```bash
+## For Debian/Ubuntu
 wget -O - https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
 
 echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(grep -oP '(?<=UBUNTU_CODENAME=).*' /etc/os-release || lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
 
 sudo apt update && sudo apt install vagrant
+
+## For RHEL/CentOS
+sudo yum install -y yum-utils
+sudo yum-config-manager --add-repo https://rpm.releases.hashicorp.com/RHEL/hashicorp.repo
+sudo yum -y install vagrant
+
+vagrant plugin install vagrant-libvirt
+vagrant plugin install vagrant-vbguest
+vagrant reload
 ```
 
+Install Ansible
+=======
+```bash
+## using pip
+sudo apt install python3-pip
+pip install ansible
+
+## using pipx
+### For Debian/Ubuntu
+sudo apt install pipx sshpass
+
+### For RHEL/CentOS
+sudo dnf install python3-pip
+python3 -m pip install --user pipx
+
+### For both Debian/Ubuntu and RHEL/CentOS
+pipx install ansible-core==2.20
+pipx install --include-deps ansible --force
+pipx ensurepath
+pipx inject ansible requests
+pipx upgrade --include-injected ansible
+
+ansible --version
+```
+
+### Vagrant
 #### host manager
 ```bash
 vagrant plugin install vagrant-hostmanager
@@ -31,6 +104,8 @@ vagrant destroy -f
 
 #### start VM
 ```bash
+sudo rmmod kvm_intel
+
 vagrant box update
 vagrant up --provider=virtualbox --provision
 vagrant global-status
@@ -48,18 +123,6 @@ vagrant reload --provision
 ```
 
 ### Ansible
-#### Install Ansible
-```bash
-sudo apt update
-sudo apt install pipx sshpass
-pipx install ansible-core==2.19.1
-pipx install --include-deps ansible --force
-pipx ensurepath
-pipx inject ansible requests
-pipx upgrade --include-injected ansible
-ansible --version
-```
-
 #### install passlib
 ```bash
 sudo apt install python3-passlib

@@ -1,0 +1,31 @@
+---
+- name: Create
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  # no_log: "{{ molecule_no_log }}"
+  tasks:
+    # TODO: Developer must implement and populate 'server' variable
+
+    - name: Create container network
+      containers.podman.podman_network:
+        name: molecule-linux-test
+        state: present
+
+    - name: Create test containers
+      containers.podman.podman_container:
+        name: "{{ hostvars[item].ansible_host }}"
+        image: "{{ hostvars[item].container_image }}"
+        command: "{{ hostvars[item].container_command }}"
+        privileged: "{{ hostvars[item].container_privileged }}"
+        state: started
+        networks:
+          - molecule-linux-test
+        systemd: true
+      loop: "{{ groups['all'] }}"
+
+    - name: Wait for containers to be ready
+      ansible.builtin.wait_for_connection:
+        timeout: 300
+      delegate_to: "{{ hostvars[item].ansible_host }}"
+      loop: "{{ groups['all'] }}"

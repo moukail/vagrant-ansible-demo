@@ -1,0 +1,96 @@
+---
+- name: Setup Server
+  hosts: all
+  become: true
+
+  vars:
+    openssl_version: "3.5.4"
+  roles:
+    - ansible-role-swap
+    - ansible-role-openssh
+    - ansible-role-python
+
+- name: database
+  hosts: db
+  become: true
+
+  vars:
+    db_root_password: Meknes1979!
+
+  roles:
+    - ansible-role-mysql
+
+- name: Setup a vpn server
+  hosts: vpn
+  become: true
+
+  vars:
+    firewall_services:
+      - http
+      - ipsec
+    eap_radius:
+      server: radius.moukail.nl
+      secret: meknes
+      auth_port: 1812
+      acct_port: 1813
+
+    eap_mschapv2:
+      username: ismail2
+      password: meknes79!
+
+    psk:
+      password: meknes79!
+
+  roles:
+    - ansible-role-firewall
+    - ansible-role-letsencrypt
+    - ansible-role-strongswan
+
+  tasks:
+    - name: Debug
+      ansible.builtin.debug:
+        msg: "VPN server setup complete"
+
+- name: Install FreeRADIUS Server
+  hosts: radius
+  become: true
+
+  vars:
+    firewall_services:
+      - radius
+    db_login_host: db.moukail.nl
+    db_root_password: Meknes1979!
+    radius_db_password: Meknes1979!
+    radius_clients:
+      #- ipaddr: ca1.moukail.nl
+      #  secret: meknes
+      #- ipaddr: ca2.moukail.nl
+      #  secret: meknes
+      - ipaddr: ae1.moukail.nl
+        secret: meknes
+      - ipaddr: ae2.moukail.nl
+        secret: meknes
+      - ipaddr: ch1.moukail.nl
+        secret: meknes
+      - ipaddr: ch2.moukail.nl
+        secret: meknes
+      - ipaddr: se1.moukail.nl
+        secret: meknes
+      - ipaddr: se2.moukail.nl
+        secret: meknes
+      - ipaddr: au1.moukail.nl
+        secret: meknes
+      - ipaddr: au2.moukail.nl
+        secret: meknes
+      - ipaddr: uk1.moukail.nl
+        secret: meknes
+      - ipaddr: uk2.moukail.nl
+        secret: meknes
+      - ipaddr: us1.moukail.nl
+        secret: meknes
+      - ipaddr: us2.moukail.nl
+        secret: meknes
+
+  roles:
+    - ansible-role-firewall
+    - ansible-role-freeradius

@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -euo pipefail
+
 COLS=$(tput cols)
 
 # if user is not running the command as root

@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -euo pipefail
+
 echo "--------------------------------"
 echo "      Installing Dependencies"
 echo "--------------------------------"
@@ -24,6 +26,7 @@ openssh_ver=10.2p1
 if [ "$(sshd -V 2>&1 | awk -F '[_,]' '{print $2}')" == "10.2p1" ]; then
     echo "OpenSSH version ${openssl_ver} is already installed."
 else
+    cd $(mktemp -d)
     wget -q -O openssh-${openssh_ver}.tar.gz https://ftp.nluug.nl/pub/OpenBSD/OpenSSH/portable/openssh-${openssh_ver}.tar.gz
     tar -xzf openssh-${openssh_ver}.tar.gz
     cd openssh-${openssh_ver}

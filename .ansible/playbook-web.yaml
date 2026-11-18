@@ -5,7 +5,7 @@
 
   vars:
     web_user: nginx
-    openssl_version: "3.5.4"
+    openssl_version: "3.5.1"
 
   roles:
     - ansible-role-swap
@@ -14,12 +14,12 @@
     - role: ansible-role-php
       vars:
         user: "{{ web_user }}"
-        php_version: 8.4.15
+        php_version: 8.4.16
 
     - role: ansible-role-php
       vars:
         user: "{{ web_user }}"
-        php_version: 8.5.0
+        php_version: 8.5.1
 
     - role: ansible-role-nginx
       vars:
